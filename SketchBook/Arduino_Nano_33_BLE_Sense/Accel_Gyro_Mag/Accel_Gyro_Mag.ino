@@ -136,7 +136,9 @@ void loop() {
     Serial.print(a_pitchFnew);
     Serial.println("°");
   
-    //  Save current values for the next loop 
+    /*
+      Save current values for the next loop
+    */ 
     a_phiFold = a_phiFnew;
     a_thetaFold = a_thetaFnew;
     a_rollFold = a_rollFnew;

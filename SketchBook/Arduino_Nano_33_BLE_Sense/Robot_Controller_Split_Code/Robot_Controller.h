@@ -8,11 +8,11 @@
 #include  "Arduino_HAT_Carrier_H7.h"
 #include  "Secrets.h"
 
-#define ROBOT_DEVICE_NAME           "Robot Smart Home Controller H7"
-#define ROBOT_DEVICE_VERSION        "0.6.2"
-#define ROBOT_DEVICE_DATE           "16-Sep-2024"
+#define ROBOT_DEVICE_NAME           "Robot Smart Home Controller - Arduino Nano BLE Sense Rev2"
+#define ROBOT_DEVICE_VERSION        "0.6.3"
+#define ROBOT_DEVICE_DATE           "06-Oct-2024"
 
-#define SKETCH_ID_CODE              "Robot Smart Home Controller H7"
+#define SKETCH_ID_CODE              "Robot Smart Home Controller - Arduino Nano BLE Sense Rev27"
 
 /*
   Sketch control - turn on (true) or off (false) as needed.
