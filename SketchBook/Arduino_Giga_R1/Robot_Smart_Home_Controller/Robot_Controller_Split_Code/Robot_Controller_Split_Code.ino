@@ -15,7 +15,7 @@
 #include  "Secrets.h"
 #include  "Robot_Controller.h"
 #include  "Web_Server_Control.h"
-#include  "Arduino_HAT_Carrier.h"
+#include  "Arduino_HAT_Carrier_H7.h"
 /*
   Web pages to be served
 */
@@ -257,7 +257,7 @@ String left_pad (String str, bool numeric_only=true, uint8_t pad_length=DEFAULT_
 
   Parameters:
 */
-String timestamp (Datetime *time_cl, bool show_full=SHOW_FULL_DATE, bool hours_24=SHOW_12_HOURS, bool long_date=SHOW_LONG_DATE, bool show_seconds=SHOW_SECONDS) {
+String timestamp (NTPClient *time_cl, bool show_full=SHOW_FULL_DATE, bool hours_24=SHOW_12_HOURS, bool long_date=SHOW_LONG_DATE, bool show_seconds=SHOW_SECONDS) {
   Datetime current_time;
   String date_time, date_str = "D*", time_str = "T*";
   String year_str = "Y*", month_str = "M*", day_str = "D*";

@@ -1392,7 +1392,7 @@ void setup (void) {
             break;
         }
 
-        Serial.println(" ms");
+        Serifaal.println(" ms");
       } else {
         halt("Unable to find the VEML7700 sensor!");
       }

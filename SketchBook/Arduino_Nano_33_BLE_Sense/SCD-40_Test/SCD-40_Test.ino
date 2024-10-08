@@ -10,14 +10,13 @@ void setup() {
     delay(100);
   }
 
-  Wire.begin();
-
   uint16_t error;
   char errorMessage[256];
 
   scd4x.begin(Wire);
 
   error = scd4x.startPeriodicMeasurement();
+
   if (error) {
     Serial.print("Error starting measurement: ");
     errorToString(error, errorMessage, 256);
@@ -34,7 +33,9 @@ void loop() {
   uint16_t co2;
   float temperature;
   float humidity;
+
   error = scd4x.readMeasurement(co2, temperature, humidity);
+
   if (error) {
     Serial.print("Error reading measurement: ");
     errorToString(error, errorMessage, 256);

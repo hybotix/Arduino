@@ -28,7 +28,7 @@ void setup(void) {
   if (bno.begin()) {
     Serial.println("Found a BNO055 IMU");
   } else {
-    Serial.print("No BNO055 IMU was detected");
+    Serial.print("No BNO055 detected");
 
     while (1) {
       delay(1000);

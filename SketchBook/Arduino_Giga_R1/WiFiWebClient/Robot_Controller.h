@@ -8,18 +8,15 @@
 #include  "Arduino_HAT_Carrier_H7.h"
 #include  "Secrets.h"
 
-#if defined(ARDUINO_PORTENTA_C33)
-#include <WiFiC3.h>
-#elif defined(ARDUINO_UNOWIFIR4)
-#include <WiFiS3.h>
-#endif
 
-#define ROBOT_DEVICE_NAME           "Robot Smart Home Controller"
-#define ROBOT_DEVICE_VERSION        "0.5.0"
-#define ROBOT_DEVICE_DATE           "20-May-2024"
+WiFiServer server(80);
+
+#define ROBOT_DEVICE_NAME           "Robot Smart Home Controller H7"
+#define ROBOT_DEVICE_VERSION        "0.6.2"
+#define ROBOT_DEVICE_DATE           "16-Sep-2024"
 
 
-#define SKETCH_ID_CODE              "Robot Smart Home Controller Split Code"
+#define SKETCH_ID_CODE              "Robot Smart Home Controller H7"
 
 /*
   Sketch control - turn on (true) or off (false) as needed.
@@ -27,13 +24,14 @@
 #define USING_SHT45_TEMP            true
 #define USING_LSM6DSOX_LIS3MDL_IMU  true
 #define USING_LIS3MDL_MAG           false
-#define USING_VEML7700_LUX              true
+#define USING_VEML7700_LUX          true
+#define USING_SCD40_CO2             true
+#define USING_ENS160_MOX            true
 
-/*
+
 #if (USING_LSM6DSOX_LIS3MDL_IMU)
 #define USING_LIS3MDL_MAG           true
 #endif
-*/
 
 /*
   Controls for the timestamp() function
@@ -47,7 +45,7 @@
 #define SHOW_LONG_DATE            true
 #define SHOW_SHORT_DATE           false
 
-#define SHOW_NORMAL_TIME          false
+#define NO_SECONDS                false
 #define SHOW_SECONDS              true
 
 #define UTC_OFFSET_HRS            -7
@@ -63,6 +61,8 @@
 */
 #define DEFAULT_BLINK_RATE_MS     250
 #define DEFAULT_NR_CYCLES         1
+
+#define ENS160_MAX_TRIES          5
 
 /*
   Defaults for left_pad()
@@ -143,19 +143,49 @@ struct Three_Axis {
     float x, y, z;
 };
 
+struct ENS160_Data {
+  bool valid;
+  uint16_t  aqi;
+  uint16_t  tvoc;
+  uint16_t  eCO2;
+  uint16_t  hp0;
+  uint16_t  hp1;
+  uint16_t  hp2;
+  uint16_t  hp3;
+};
+
+struct LSM6DSOX_Data {
+  Three_Axis  accelerometer;
+  Three_Axis  gyroscope;
+  Three_Axis  magnetometer;
+  float celsius;
+  float fahrenheit;
+};
+
+struct SCD40_Data {
+  uint16_t CO2;
+  float celsius;
+  float fahrenheit;
+  float humidity;
+};
+
+struct SHT45_Data {
+  float celsius;
+  float fahrenheit;
+  float humidity;
+};
+
 /*
   Used to hold all sensor data
 */
 struct Environment_Data {
+  bool initialize = true;
   bool valid = false;
-  float celsius;
-  float fahrenheit;
-  float humidity;
 
-  Three_Axis accelerometer;
-  Three_Axis gyroscope;
-  float temperature;
-  Three_Axis magnetometer;
+  ENS160_Data ens160;
+  LSM6DSOX_Data lsm6dsox;
+  SHT45_Data  sht45;
+  SCD40_Data  scd40;
 };
 
 /*
@@ -173,7 +203,7 @@ bool connected = true;        //  True = Connected to WiFi
 int MUSIC_NOTES[12] = { 261, 277, 293, 311, 329, 349, 369, 392, 415, 440, 466, 493 };
 uint8_t MAX_NR_NOTES = 12;
 
-char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+char days_of_the_week[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
 String long_months[12] = { "January", "February", "March", "April", "May", "June", "July",
   "August", "September", "October", "November", "December" };
@@ -184,6 +214,7 @@ String week_days[7] = { "Sunday", "Monday", "Tuesday", "Wednesday",
 int wifi_status = WL_IDLE_STATUS;
 uint16_t request_count = 0;
 uint16_t looper = 0;
+IPAddress ip_addr = "*";
 Environment_Data sensors;
 System_Sensor_Status sensor_status;
 
