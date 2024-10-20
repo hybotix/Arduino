@@ -338,10 +338,10 @@ struct ColorRGB {
 #define PUT_STATUS                    (PUT_BASE)
 #define PUT_CHANGE                    (PUT-BASE + 1)
 
-typedef struct {
+struct Web_Page_Info {
   uint8_t id;
   String html;
   String name;
   String title;
-} Web_Page_Info;
+};
 #endif

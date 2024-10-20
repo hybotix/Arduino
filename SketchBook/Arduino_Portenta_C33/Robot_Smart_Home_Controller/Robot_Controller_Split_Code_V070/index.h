@@ -31,7 +31,8 @@ const char *HTML_CONTENT_HOME = R""""(
         <li><a href="/switches"><span style="color: yellow">Switch Status</span></a></li>
         <li><a href="/potentiometer"><span style="color: yellow">Potentiometer Data</span></a></li>
         <li><a href="/light"><span style="color: yellow">Light level</span></a></li>
-        <li><a href="/imu"><span style="color: yellow">IMU Data</span></a></li>
+        <li><a href="/imu_bno055"><span style="color: yellow">BNO055 IMU Data</span></a></li>
+        <li><a href="/imu_lsm6dsox"><span style="color: yellow">LSM6DSOX IMU Data</span></a></li>
     </ul></H3>
 </body>
 </html>
