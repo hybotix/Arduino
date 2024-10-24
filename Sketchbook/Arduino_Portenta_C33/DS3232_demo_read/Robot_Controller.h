@@ -5,64 +5,55 @@
 #ifndef ROBOT_CONTROLLER_H
 #define ROBOT_CONTROLLER_H
 
-#include <Adafruit_Sensor.h>
+#include <Adafruit_BNO055.h>
 #include  "Arduino_HAT_Carrier_C33.h"
 #include  "Secrets.h"
 
 //WiFiServer server(80);
 
-#define ROBOT_DEVICE_NAME           "Robot Smart Home Controller - C33)"
-#define ROBOT_DEVICE_VERSION        "0.6.8 [C33]"
-#define ROBOT_DEVICE_DATE           "10-Oct-2024"
+#define ROBOT_DEVICE_NAME           "Robot Smart Home Controller (C33))"
+#define ROBOT_DEVICE_VERSION        "0.6.7 (C33)"
+#define ROBOT_DEVICE_DATE           "09-Oct-2024"
 
-#define SKETCH_ID_CODE              "Robot Smart Home Controller - C33)"
+
+#define SKETCH_ID_CODE              "Robot Smart Home Controller (C33))"
 #define DEVICE_NOT_PRESENT          0xFF
-
 /*
   Sketch control - turn on (true) or off (false) as needed.
 */
-#define USING_DS3231                true
-#define MUX_DS3231_PORT             0
-#define MUX_DS3231_NAME             "DS3231 RTC"
+#define USING_DS3231_RTC            true
+#define MUX_DS3231_RTC              0
 
-#define USING_BNO055                true
-#define MUX_BNO055_PORT             1
-#define MUX_BNO055_NAME             "BNO055 9-DOF IMU"
+#define USING_BNO055_IMU            true
+#define MUX_BNO055_IMU              1
 
-#define USING_ENS160                true
-#define MUX_ENS160_PORT             2
-#define MUX_ENS160_NAME             "ENS160 MOX"
+#define USING_ENS160_MOX            true
+#define MUX_ENS160_MOX              2
 
-#define USING_SCD40                 true
-#define MUX_SCD40_PORT              3
-#define MUX_SCD40_NAME              "SCD-40 CO2"
+#define USING_LSM6DSOX_IMU_9DOF     true
+#define MUX_LSM6DSOX_IMU_9DOF       3
 
-#define USING_LSM6DSOX_9DOF         false
-#define MUX_LSM6DSOX_9DOF_PORT      DEVICE_NOT_PRESENT
-#define MUX_LSM6DSOX_9DOF_NAME      "LSM6DSOX 9-DOF IMU"
+#define USING_SCD40_CO2             false
+#define MUX_SCD40_CO2               DEVICE_NOT_PRESENT
 
-#define USING_LIS3MDL               false
-#define MUX_LIS3MDL_PORT            DEVICE_NOT_PRESENT
-#define MUX_LIS3MDL_NAME            "LIS3MDL Magnetometer"
+#define USING_LIS3MDL_MAG           false
+#define MUX_LIS3MDL_MAG             DEVICE_NOT_PRESENT
 
-#define USING_LSM6DSOX_6DOF         false
-#define MUX_LSM6DSOX_6DOF_PORT      DEVICE_NOT_PRESENT
-#define MUX_LSM6DSOX_6DOF_NAME      "LSM6DSOX 6-DOF_IMU"
+#define USING_LSM6DSOX_IMU_6DOF     false
+#define MUX_LSM6DSOX_6DOF           DEVICE_NOT_PRESENT
 
-#define USING_VEML7700              false
-#define MUX_VEML7700_PORT           DEVICE_NOT_PRESENT
-#define MUX_VEML7700_NAME           "VEML7700 Lux"
+#define USING_VEML7700_LUX          false
+#define MUX_VEML7700_LUX            DEVICE_NOT_PRESENT
 
-#define USING_SHT45                 false
-#define MUX_SHT45_PORT              DEVICE_NOT_PRESENT
-#define MUX_SHT45_NAME              "SHT45 Temperature/Humidity"
+#define USING_SHT45_TEMP            false
+#define MUX_SHT45_TEMP              DEVICE_NOT_PRESENT
 
-#if (USING_LSM6DSOX_9DOF)
-#define USING_LIS3MDL               true
-#define MUX_LIS3MDL_PORT            MUX_LSM6DSOX_9DOF_PORT
+#if (USING_LSM6DSOX_IMU_9DOF)
+#define USING_LIS3MDL_MAG           true
+#define MUX_LIS3MDL_MAG             MUX_LSM6DSOX_IMU_9DOF
 #endif
 
-#if (USING_BNO055)
+#if (USING_BNO055_IMU)
 #include <math.h>
 #endif
 
@@ -174,14 +165,14 @@ struct Three_Axis {
   System Status for hotswapping sensors
 */
 struct System_Sensor_Status {
-  bool bno055 = USING_BNO055;
-  bool ds3231 = USING_DS3231;
-  bool ens160 = USING_ENS160;
-  bool scd40 = USING_SCD40;
-  bool sht45 = USING_SHT45;
-  bool lsm6dsox = USING_LSM6DSOX_9DOF;
-  bool lis3mdl = USING_LIS3MDL;
-  bool veml7700 = USING_VEML7700;
+  bool bno055 = USING_BNO055_IMU;
+  bool ds3231 = USING_DS3231_RTC;
+  bool ens160 = USING_ENS160_MOX;
+  bool scd40 = USING_SCD40_CO2;
+  bool sht45 = USING_SHT45_TEMP;
+  bool lsm6dsox = USING_LSM6DSOX_IMU_9DOF;
+  bool lis3mdl = USING_LIS3MDL_MAG;
+  bool veml7700 = USING_VEML7700_LUX;
 };
 
 struct ENS160_Data {
