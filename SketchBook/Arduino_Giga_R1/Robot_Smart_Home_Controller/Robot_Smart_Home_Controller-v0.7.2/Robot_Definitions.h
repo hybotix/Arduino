@@ -10,17 +10,20 @@
 #include <WiFiC3.h>
 #elif defined(ARDUINO_UNOWIFIR4)
 #include <WiFiS3.h>
+#elif defined(ARDUINO_GIGA) || defined(ARDUINO_PORTENTA_H7)
+#include  <WiFi.h>
+#include  <WiFiServer.h>
 #endif
 
 /***************************************************************************************
     From Robot_Controller.h
 ****************************************************************************************/
 
-#define ROBOT_DEVICE_NAME           "Robot Smart Home Controller - C33)"
-#define ROBOT_DEVICE_VERSION        "0.7.0 [C33]"
-#define ROBOT_DEVICE_DATE           "10-Oct-2024"
+#define ROBOT_DEVICE_NAME           "Robot Smart Home Controller"
+#define ROBOT_DEVICE_VERSION        "0.7.2"
+#define ROBOT_DEVICE_DATE           "10-Nov-2024"
 
-#define SKETCH_ID_CODE              "Robot Smart Home Controller - C33)"
+#define SKETCH_ID_CODE              "Robot Smart Home Controller"
 #define DEVICE_NOT_PRESENT          0xFF
 
 /*
@@ -313,9 +316,9 @@ struct ColorRGB {
 #define PAGE_IMU_BNO055_NAME          "Robot Smart Home Controller: BNO055 IMU"
 #define PAGE_IMU_BNO055_TITLE         PAGE_IMU_BNO055_NAME
 
-#define PAGE_IMU_LSM6DSOX_ID          INFO_PAGE_BASE + 6
-#define PAGE_IMU_LSM6DSOX_NAME        "Robot Smart Home Controller: LSM6DSOX IMU"
-#define PAGE_IMU_LSM6DSOX_TITLE       PAGE_IMU_LSM6DSOX_NAME
+#define PAGE_IMU_ID                   INFO_PAGE_BASE + 6
+#define PAGE_IMU_NAME                 "Robot Smart Home Controller: IMU"
+#define PAGE_IMU_TITLE                PAGE_IMU_NAME
 
 #define PAGE_NO_DATA_ID               INFO_PAGE_BASE + 7
 #define PAGE_NO_DATA_NAME             "Robot Smart Home Controller: NO DATA AVAILABLE"

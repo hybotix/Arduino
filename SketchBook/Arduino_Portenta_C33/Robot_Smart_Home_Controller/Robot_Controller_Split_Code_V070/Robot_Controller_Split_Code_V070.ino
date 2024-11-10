@@ -405,7 +405,7 @@ String left_pad (String str, uint8_t pad_length=DEFAULT_PAD_LENGTH, bool numeric
 
   Parameters:
 */
-String timestamp (QWIICMUX mx, String web_page_name, bool show_full_date=SHOW_FULL_DATE, bool hours_mode=SHOW_24_HOURS, bool long_date=SHOW_LONG_DATE, bool show_seconds=SHOW_SECONDS) {
+String timestamp (QWIICMUX mx, DS3232 clock, String web_page_name, bool show_full_date=SHOW_FULL_DATE, bool hours_mode=SHOW_24_HOURS, bool long_date=SHOW_LONG_DATE, bool show_seconds=SHOW_SECONDS) {
   String date_time = "", date_str = "D*", time_str = "T*";
   String year_str = "Y*", month_str = "M*", day_str = "D*", week_day_str;
   //String hours_str;
@@ -415,15 +415,15 @@ String timestamp (QWIICMUX mx, String web_page_name, bool show_full_date=SHOW_FU
   uint8_t month, hours, minutes, seconds;
 
   set_mux_port(mx, MUX_DS3231_PORT, web_page_name);
-  rtc.read();
+  clock.read();
 
-  year = rtc.year();
-  month = rtc.month();
-  day = rtc.day();
-  hours = rtc.hours();
-  minutes = rtc.minutes();
-  seconds = rtc.seconds();
-  week_day = rtc.weekDay();
+  year = clock.year();
+  month = clock.month();
+  day = clock.day();
+  hours = clock.hours();
+  minutes = clock.minutes();
+  seconds = clock.seconds();
+  week_day = clock.weekDay();
 
   //  Create a standard date and time stamp
   date_time = left_pad(String(year), 4) + "-" + left_pad(String(month), 2) + "-" +
@@ -517,13 +517,14 @@ String timestamp (QWIICMUX mx, String web_page_name, bool show_full_date=SHOW_FU
   Set up the empty page for when there is no data - sensor is not
     available.
 */
-String set_empty_page (QWIICMUX mx, Web_Page_Info page_info, uint16_t sequence_nr) {
+String set_empty_page (QWIICMUX mx, Web_Page_Info *pages, uint16_t sequence_nr) {
   String date_time, html;
 
-  html =  page_info[PAGE_NO_DATA_ID].html;
-  date_time = timestamp(mx, page_info[PAGE_NO_DATA_ID].name, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
-  Serial.println(page_info[PAGE_NO_DATA_ID].name);
-  html.replace("PAGE_NAME_MARKER", page_info[PAGE_NO_DATA_ID].name);
+  html =  pages[PAGE_NO_DATA_ID].html;
+  date_time = "10/21/2024 at 23:06:00";
+  //date_time = timestamp(mx, pages[PAGE_NO_DATA_ID].name, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
+  Serial.println(pages[PAGE_NO_DATA_ID].name);
+  html.replace("PAGE_NAME_MARKER", pages[PAGE_NO_DATA_ID].name);
   html.replace("DATESTAMP_MARKER", date_time);
   html.replace("SEQUENCE_COUNT_MARKER", String(sequence_nr));
 
@@ -657,15 +658,9 @@ void set_mux_port (QWIICMUX mx, uint8_t port, String device_name) {
 */
 bool init_i2c_mux (QWIICMUX mx, System_Sensor_Status *sen_stat) {
   bool mux_present;
-in
-  //  Initialize the Sparkfun I2C Multiplexor
-  mux_present = mx.begin();
 
-  if (mux_present) {
-    sen_stat->tca9548a = true;
-  } else {
-    sen_stat->tca9548a = false;
-  }
+  //  Initialize the Sparkfun I2C Multiplexor
+  sen_stat->tca9548a = mx.begin();
 
   return sen_stat->tca9548a;
 }
@@ -840,13 +835,13 @@ bool init_ens160 (QWIICMUX mx, ScioSense_ENS160 ens, System_Sensor_Status *sen_s
   //  Set the mux port
   set_mux_port(mx, MUX_ENS160_PORT, MUX_ENS160_NAME);
 
-  sen_stat.ens160 = ens->begin();
+  sen_stat->ens160 = ens.begin();
 
   if (sen_stat->ens160) {
     Serial.print("Found an ENS160 MOX Sensor, ");
 
     if (sen_stat->ens160) {
-      sen_stat->ens160 = ens->available();
+      sen_stat->ens160 = ens.available();
 
       if (sen_stat->ens160) {
         Serial.print("Revison ");
@@ -929,7 +924,7 @@ bool init_sht4x (QWIICMUX mx, Adafruit_SHT4x sht, System_Sensor_Status *sen_stat
 
   if (sen_stat->sht45) {
     Serial.print("Found an SHT4x sensor with the serial number 0x");
-    Serial.println(sht->readSerial(), HEX);
+    Serial.println(sht.readSerial(), HEX);
 
     // You can have 3 different precisions, higher precision takes longer
     sht.setPrecision(SHT4X_HIGH_PRECISION);
@@ -1243,7 +1238,7 @@ void init_resistors(uint8_t nr_of_resistors=NUMBER_OF_RESISTORS) {
 
   HTML is in String array Web_Page_Info[]
 */
-void init_html (Web_Page_Info *page_info, uint8_t max_info_pages=MAX_NUM_INFO_PAGES) {
+void init_html (Web_Page_Info *pages, uint8_t max_info_pages=MAX_NUM_WEB_PAGES) {
   uint8_t page_nr;
   String html, message;
 
@@ -1259,113 +1254,103 @@ void init_html (Web_Page_Info *page_info, uint8_t max_info_pages=MAX_NUM_INFO_PA
       case PAGE_HOME_ID:                             //  0
         Serial.print(PAGE_HOME_TITLE);
 
-        page_info[page_nr].id = PAGE_HOME_ID;
-        page_info[page_nr].name = PAGE_HOME_NAME;
-        page_info[page_nr].title = PAGE_HOME_TITLE;
+        pages[page_nr].name = PAGE_HOME_NAME;
+        pages[page_nr].title = PAGE_HOME_TITLE;
 
         html = String(HTML_CONTENT_HOME);
         html.replace("PAGE_HOME_TITLE_MARKER", PAGE_HOME_TITLE);
         html.replace("PAGE_HOME_NAME_MARKER", PAGE_HOME_NAME);
         html.replace("SKETCH_CODE_MARKER", SKETCH_ID_CODE);
 
-        Web_Page_Info[PAGE_HOME_ID].html = html;
+        pages[PAGE_HOME_ID].html = html;
         break;
       case PAGE_ENVIRONMENT_ID:                    //  1
         Serial.print(PAGE_ENVIRONMENT_TITLE);
 
-        page_info[page_nr].id = PAGE_ENVIRONMENT_ID;
-        page_info[page_nr].name = PAGE_ENVIRONMENT_NAME;
-        page_info[page_nr].title = PAGE_ENVIRONMENT_TITLE;
+        pages[page_nr].name = PAGE_ENVIRONMENT_NAME;
+        pages[page_nr].title = PAGE_ENVIRONMENT_TITLE;
 
         html = String(HTML_CONTENT_ENVIRONMENT);
         html.replace("PAGE_ENVIRONMENT_TITLE_MARKER", PAGE_ENVIRONMENT_TITLE);
         html.replace("PAGE_ENVIRONMENT_NAME_MARKER", PAGE_ENVIRONMENT_NAME);
 
-        Web_Page_Info[PAGE_ENVIRONMENT_ID].html = html;
+        pages[PAGE_ENVIRONMENT_ID].html = html;
         break;
       case PAGE_SWITCHES_ID:                      //  2
         Serial.print(PAGE_SWITCHES_TITLE);
 
-        page_info[page_nr].id = PAGE_SWITCHES_ID;
-        page_info[page_nr].name = PAGE_SWITCHES_NAME;
-        page_info[page_nr].title = PAGE_SWITCHES_TITLE;
+        pages[page_nr].name = PAGE_SWITCHES_NAME;
+        pages[page_nr].title = PAGE_SWITCHES_TITLE;
 
         html = String(HTML_CONTENT_SWITCHES);
         html.replace("PAGE_SWITCHES_TITLE_MARKER", PAGE_SWITCHES_TITLE);
         html.replace("PAGE_SWITCHES_NAME_MARKER", PAGE_SWITCHES_NAME);
 
-        Web_Page_Info[PAGE_SWITCHES_ID].html = html;
+        pages[PAGE_SWITCHES_ID].html = html;
         break;
       case PAGE_POTENTIOMETER_ID:                //  3
         Serial.print(PAGE_POTENTIOMETER_TITLE);
 
-        page_info[page_nr].id = PAGE_POTENTIOMETER_ID;
-        page_info[page_nr].name = PAGE_POTENTIOMETER_NAME;
-        page_info[page_nr].title = PAGE_POTENTIOMETER_TITLE;
+        pages[page_nr].name = PAGE_POTENTIOMETER_NAME;
+        pages[page_nr].title = PAGE_POTENTIOMETER_TITLE;
 
         html = String(HTML_CONTENT_POTENTIOMETER);
         html.replace("PAGE_POTENTIOMETER_TITLE_MARKER", PAGE_POTENTIOMETER_TITLE);
         html.replace("PAGE_POTENTIOMETER_NAME_MARKER", PAGE_POTENTIOMETER_NAME);
 
-        Web_Pages[PAGE_POTENTIOMETER_ID].html = html;
+        pages[PAGE_POTENTIOMETER_ID].html = html;
         break;
       case PAGE_LIGHT_ID:                       //  4
         Serial.print(PAGE_LIGHT_TITLE);
 
-        page_info[page_nr].id = PAGE_LIGHT_ID;
-        page_info[page_nr].name = PAGE_LIGHT_NAME;
-        page_info[page_nr].title = PAGE_LIGHT_TITLE;
+        pages[page_nr].name = PAGE_LIGHT_NAME;
+        pages[page_nr].title = PAGE_LIGHT_TITLE;
 
         html = String(HTML_CONTENT_LIGHT);
         html.replace("PAGE_LIGHT_TITLE_MARKER", PAGE_LIGHT_TITLE);
         html.replace("PAGE_LIGHT_NAME_MARKER", PAGE_LIGHT_NAME);
 
-        Web_Pages[PAGE_LIGHT_ID].html = html;
+        pages[PAGE_LIGHT_ID].html = html;
         break;
       case PAGE_IMU_BNO055_ID:                 //  5
         Serial.print(PAGE_IMU_BNO055_TITLE);
 
-        page_info[page_nr].id = PAGE_IMU_BNO055_ID;
-        page_info[page_nr].name = PAGE_IMU_BNO055_NAME;
-        page_info[page_nr].title = PAGE_IMU_BNO055_TITLE;
+        pages[page_nr].name = PAGE_IMU_BNO055_NAME;
+        pages[page_nr].title = PAGE_IMU_BNO055_TITLE;
 
         html = String(HTML_CONTENT_IMU_BNO055);
         html.replace("PAGE_IMU_BNO055_TITLE_MARKER", PAGE_IMU_BNO055_TITLE);
         html.replace("PAGE_IMU_BNO055_NAME_MARKER", PAGE_IMU_BNO055_NAME);
 
-        Web_Pages[PAGE_IMU_BNO055_ID].html = html;
+        pages[PAGE_IMU_BNO055_ID].html = html;
        break;
       case PAGE_IMU_LSM6DSOX_ID:               //  6
         Serial.print(PAGE_IMU_LSM6DSOX_TITLE);
 
-        page_info[page_nr].id = PAGE_IMU_LSM6DSOX_ID;
-        page_info[page_nr].name = PAGE_IMU_LSM6DSOX_NAME;
-        page_info[page_nr].title = PAGE_IMU_LSM6DSOX_TITLE;
+        pages[page_nr].name = PAGE_IMU_LSM6DSOX_NAME;
+        pages[page_nr].title = PAGE_IMU_LSM6DSOX_TITLE;
 
         html = String(HTML_CONTENT_IMU_LSM6DSOX);
         html.replace("PAGE_IMU_BNO055_TITLE_MARKER", PAGE_IMU_LSM6DSOX_TITLE);
         html.replace("PAGE_IMU_BNO055_NAME_MARKER", PAGE_IMU_LSM6DSOX_NAME);
 
-        Web_Pages[PAGE_IMU_LSM6DSOX_ID].html = html;
+        pages[PAGE_IMU_LSM6DSOX_ID].html = html;
        break;
       case PAGE_NO_DATA_ID:                    //  7
         Serial.print(PAGE_NO_DATA_TITLE);
 
-        page_info[page_nr].id = PAGE_NO_DATA_ID;
-        page_info[page_nr].name = PAGE_NO_DATA_NAME;
-        page_info[page_nr].title = PAGE_NO_DATA_TITLE;
+        pages[page_nr].name = PAGE_NO_DATA_NAME;
+        pages[page_nr].title = PAGE_NO_DATA_TITLE;
 
         html = String(HTML_CONTENT_NO_DATA);
         html.replace("PAGE_NO_DATA_TITLE_MARKER", PAGE_NO_DATA_TITLE);
         html.replace("PAGE_NO_DATA_NAME_MARKER", PAGE_NO_DATA_NAME);
-        Web_Pages[PAGE_NO_DATA_ID].html = html;
+        pages[PAGE_NO_DATA_ID].html = html;
       default:
         message = "Web Page ID Error: page_nr = " + String(page_nr) + ", max_pages = " + String(max_info_pages) + "!";
-        halt(message);
+        //halt(message);
         break;
     }
-
-    Serial.println("'");
   }
 }
 
@@ -1397,14 +1382,14 @@ Environment_Data get_lis3mdl (QWIICMUX mx, Environment_Data curr_data, Adafruit_
   return sensors;
 }
 
-Environment_Data get_ens160 (QWIICMUX mx, Environment_Data curr_data, ScioSense_ENS160 *ens) {
+Environment_Data get_ens160 (QWIICMUX mx, ScioSense_ENS160 ens, Environment_Data curr_data) {
   uint16_t count = 0;
   Environment_Data sensors;
 
   //  Set the mux port
   set_mux_port(mx, MUX_ENS160_PORT, MUX_ENS160_NAME);
 
-  while (!ens->available() and count < ENS160_MAX_TRIES) {
+  while (!ens.available() and count < ENS160_MAX_TRIES) {
     //  Wait for data to be available
     delay(100);
     count++;
@@ -1415,16 +1400,16 @@ Environment_Data get_ens160 (QWIICMUX mx, Environment_Data curr_data, ScioSense_
 
     sensors.ens160.valid = true;
 
-    ens->measure(true);
-    ens->measureRaw(true);
+    ens.measure(true);
+    ens.measureRaw(true);
 
-    sensors.ens160.aqi = ens->getAQI();
-    sensors.ens160.tvoc = ens->getTVOC();
-    sensors.ens160.eCO2 = ens->geteCO2();
-    sensors.ens160.hp0 = ens->getHP0();
-    sensors.ens160.hp1 = ens->getHP1();
-    sensors.ens160.hp2 = ens->getHP2();
-    sensors.ens160.hp3 = ens->getHP3();
+    sensors.ens160.aqi = ens.getAQI();
+    sensors.ens160.tvoc = ens.getTVOC();
+    sensors.ens160.eCO2 = ens.geteCO2();
+    sensors.ens160.hp0 = ens.getHP0();
+    sensors.ens160.hp1 = ens.getHP1();
+    sensors.ens160.hp2 = ens.getHP2();
+    sensors.ens160.hp3 = ens.getHP3();
   } else {
     sensors.ens160.valid = false;
   }
@@ -1588,7 +1573,7 @@ Environment_Data get_bno055 (QWIICMUX mx, Environment_Data curr_data) {
   Get temperature and humidity readings from the SHT45 and put them i sensor
     and put them into the environment data structure.
 */
-Environment_Data get_sht45 (QWIICMUX mx, Environment_Data curr_data, Adafruit_SHT4x *sht) {
+Environment_Data get_sht45 (QWIICMUX mx, Adafruit_SHT4x sht, Environment_Data curr_data) {
   Environment_Data sensors;
   sensors_event_t rel_humidity, temperature;
   uint32_t timestamp = millis();
@@ -1599,7 +1584,7 @@ Environment_Data get_sht45 (QWIICMUX mx, Environment_Data curr_data, Adafruit_SH
 
   sensors = check_data(mx, curr_data);
 
-  sht->getEvent(&rel_humidity, &temperature);// populate temp and humidity objects with fresh data
+  sht.getEvent(&rel_humidity, &temperature);// populate temp and humidity objects with fresh data
   celsius = temperature.temperature;
 
   sensors.sht45.celsius = celsius;
@@ -1609,7 +1594,7 @@ Environment_Data get_sht45 (QWIICMUX mx, Environment_Data curr_data, Adafruit_SH
   return sensors;
 }
 
-Environment_Data get_scd40 (QWIICMUX mx, Environment_Data curr_data, SensirionI2CScd4x *scd) {
+Environment_Data get_scd40 (QWIICMUX mx, SensirionI2CScd4x scd, Environment_Data curr_data) {
   Environment_Data sensors;
   String error_message;
   uint16_t CO2, error;
@@ -1624,12 +1609,12 @@ Environment_Data get_scd40 (QWIICMUX mx, Environment_Data curr_data, SensirionI2
   delay(2000);
 
   // Read Measurement
-  error = scd->readMeasurement(CO2, celsius, humidity);
+  error = scd.readMeasurement(CO2, celsius, humidity);
 
   //  Check if we got an error and retry if so  
   if (error) {
     delay(1000);
-    error = scd->readMeasurement(CO2, celsius, humidity);
+    error = scd.readMeasurement(CO2, celsius, humidity);
 
     if (error){
       error_message = "Error trying to get a measurement, skipping: Code " + String(error);
@@ -1638,7 +1623,7 @@ Environment_Data get_scd40 (QWIICMUX mx, Environment_Data curr_data, SensirionI2
   } else if (CO2 == 0) {
     //  Wait and retry for invalid samples
     delay(1000);
-    error = scd->readMeasurement(CO2, celsius, humidity);
+    error = scd.readMeasurement(CO2, celsius, humidity);
 
     if (error) {
       error_message = "Invalid SCD-40 CO2 sample detected, code " + String(error);
@@ -1749,7 +1734,7 @@ void setup (void) {
   */
 
   //  Initialize the Sparkfun I2C Multiplexor - Halt if not present
-  sensor_found = init_i2c_mux(&mux, &sensor_status);
+  sensor_found = init_i2c_mux(mux, &sensor_status);
 
   if (sensor_found) {
     message = "The " + String(MUX_TCA9548A_NAME) + " was found.";
@@ -1801,7 +1786,7 @@ void setup (void) {
     digitalWrite(LED_RASPI_CONNECT_PIN, HIGH);
 
     //  Initialize the static HTML
-    init_html(MAX_NUM_INFO_PAGES);
+    init_html(web_pages, MAX_NUM_WEB_PAGES);
 
     //  Initialize all switches
     init_switches();
@@ -1815,17 +1800,17 @@ void setup (void) {
 
     //  Initialize the sensors data structure
     sensors.initialize = true;
-    sensors = check_data(&mux, sensors);
+    sensors = check_data(mux, sensors);
 
     if (USING_ENS160) {
-      init_ens160(&mux, &ens160, &sensor_status);
+      init_ens160(mux, ens160, &sensor_status);
     }
 
     //  initialize the SCD-40 CO2, Temperature, and Humidity sensor
     if (USING_SCD40) {
       sensor_status.scd40 = true;
 
-      scd_error = init_scd40(&mux, &scd40, &sensor_status);
+      scd_error = init_scd40(mux, scd40, &sensor_status);
 
       if (scd_error == 268) {
         Serial.println("Could not get the SCD-40 serial number!");
@@ -1841,31 +1826,31 @@ void setup (void) {
 
     //  Initialize the SHT4x Temperature and Humidity sensors
     if (USING_SHT45) {
-      sensor_found = init_sht4x(&mux, &sht45, &sensor_status);
+      sensor_found = init_sht4x(mux, sht45, &sensor_status);
     }
 
     //  Initialize the LSM6DSOX IMU
     if (USING_LSM6DSOX_9DOF) { 
-      sensor_found = init_lsm6dsox(&mux, &sensor_status); 
+      sensor_found = init_lsm6dsox(mux, &sensor_status); 
     }
 
     if (USING_BNO055) {
-      sensor_found = init_bno055(&mux, &bno055, &sensor_status);
+      sensor_found = init_bno055(mux, bno055, &sensor_status);
     }
 
     //  Initialize the LIS3MDL Magnetometer
     if (USING_LIS3MDL) {
-      sensor_found = init_lis3mdl(&mux, &lis3, &sensor_status);
+      sensor_found = init_lis3mdl(mux, lis3, &sensor_status);
     }
 
     //  Initialize the VEML7700 Light (Lux) sensor
     if (USING_VEML7700) {
-      sensor_found = init_veml7700(&mux, &sensor_status);
+      sensor_found = init_veml7700(mux, &sensor_status);
     }
 
     Serial.println();
     Serial.print("Today is ");
-    Serial.println(timestamp(&mux, PAGE_LIGHT_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS));
+    Serial.println(timestamp(mux, rtc, PAGE_LIGHT_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS));
   
     //  Start the web servertimestamp 
     Serial.println();
@@ -1875,18 +1860,6 @@ void setup (void) {
     halt("Unable to connect to network", true, ssid);
   }
 
-Web_Pages[MAX_NUM_INFO_PAGES] = {
-  { PAGE_HOME_ID, "", PAGE_HOME_NAME, PAGE_HOME_TITLE },
-  { PAGE_ENVIRONMENT_ID, "", PAGE_ENVIRONMENT_NAME, PAGE_ENVIRONMENT_TITLE },
-  { PAGE_SWITCHES_ID, "", PAGE_SWITCHES_NAME, PAGE_SWITCHES_TITLE },
-  { PAGE_POTENTIOMETER_ID, "", PAGE_POTENTIOMETER_NAME, PAGE_POTENTIOMETER_TITLE },
-  { PAGE_LIGHT_ID, "", PAGE_LIGHT_NAME, PAGE_LIGHT_TITLE },
-  { PAGE_IMU_BNO055_ID, "", PAGE_IMU_BNO055_NAME, PAGE_IMU_BNO055_TITLE },
-  { PAGE_IMU_LSM6DSOX_ID, "", PAGE_IMU_LSM6DSOX_NAME, PAGE_IMU_LSM6DSOX_TITLE },
-  { PAGE_NO_DATA_ID, "", PAGE_NO_DATA_NAME, PAGE_NO_DATA_TITLE },
-  { PAGE_ERROR_404_ID, "", PAGE_ERROR_404_NAME, PAGE_ERROR_404_TITLE },
-  { PAGE_ERROR_405_ID, "", PAGE_ERROR_405_NAME, PAGE_ERROR_405_TITLE }
-};
 
   //  For testing setup()
   //halt("END OF SETUP HALT");
@@ -2042,15 +2015,15 @@ void loop (void) {
         //  Send the HTTP response body
         switch (page_id) {
           case PAGE_HOME_ID:
-            html = Web_Pages[PAGE_HOME]; //String(HTML_CONTENT_HOME);
-            date_time = timestamp(&mux, PAGE_HOME_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
+            html = web_pages[PAGE_HOME_ID].html; //String(HTML_CONTENT_HOME);
+            date_time = timestamp(mux, rtc, PAGE_HOME_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
             Serial.println(PAGE_HOME_NAME);
             html.replace("SEQUENCE_COUNT_MARKER", String(sequence_nr));
             html.replace("DATESTAMP_MARKER", date_time);
             break;
           case PAGE_ENVIRONMENT_ID:
-            html =  Web_Pages[PAGE_ENVIRONMENT_ID];
-            date_time = timestamp(&mux, PAGE_ENVIRONMENT_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
+            html =  web_pages[PAGE_ENVIRONMENT_ID].html;
+            date_time = timestamp(mux, rtc, PAGE_ENVIRONMENT_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
             Serial.println(PAGE_ENVIRONMENT_NAME);
             html.replace("DATESTAMP_MARKER", date_time);
             html.replace("SEQUENCE_COUNT_MARKER", String(sequence_nr));
@@ -2058,7 +2031,7 @@ void loop (void) {
             Serial.println("Sending sensor readings");
 
             if (USING_SHT45 and sensor_status.sht45) {
-              sensors = get_sht45(&mux, sensors, &sht45);
+              sensors = get_sht45(mux, sht45, sensors);
 
               html.replace("SHT45_FAHRENHEIT_MARKER", String(sensors.sht45.fahrenheit));
               html.replace("SHT45_CELSIUS_MARKER", String(sensors.sht45.celsius));
@@ -2068,7 +2041,7 @@ void loop (void) {
             if (USING_SCD40 and sensor_status.scd40) {
               Serial.println("Getting temperature and humidity readings");
 
-              sensors = get_scd40 (&mux,sensors, &scd40);
+              sensors = get_scd40(mux, scd40,sensors);
             
               //  Replace the markers by real values
               html.replace("DATESTAMP_MARKER", date_time);
@@ -2080,7 +2053,7 @@ void loop (void) {
             }
 
             if (USING_ENS160 and sensor_status.ens160) {
-              sensors = get_ens160(&mux, sensors, &ens160);
+              sensors = get_ens160(mux, ens160, sensors);
 
               if (sensors.ens160.valid) {
                 html.replace("ENS160_AQI_MARKER", String(sensors.ens160.aqi));
@@ -2096,12 +2069,12 @@ void loop (void) {
             if ( !(sensor_status.sht45 and sensor_status.scd40 and sensor_status.ens160)) {
               //  Empty page - no sensor data is availavle
 
-              set_empty_page(mux, Web_Pages, sequence_nr);
+              set_empty_page(mux, web_pages, sequence_nr);
             }
             break;
           case PAGE_SWITCHES_ID:
-            html = Web_Pages[PAGE_SWITCHES];  //String(HTML_CONTENT_SWITCHES);
-            date_time = timestamp(&mux, PAGE_SWITCHES_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
+            html = web_pages[PAGE_SWITCHES_ID].html;  //String(HTML_CONTENT_SWITCHES);
+            date_time = timestamp(mux, rtc, PAGE_SWITCHES_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
             get_switch_states();
             print_switch_states();
             set_leds();
@@ -2114,8 +2087,8 @@ void loop (void) {
             html.replace("REQUEST_COUNT_MARKER", String(request_count));
             break;
           case PAGE_POTENTIOMETER_ID:
-            html = Web_Pages[PAGE_POTENTIOMETER_ID]; //String(HTML_CONTENT_POTENTIOMETER);
-            date_time = timestamp(&mux, PAGE_POTENTIOMETER_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
+            html = web_pages[PAGE_POTENTIOMETER_ID].html; //String(HTML_CONTENT_POTENTIOMETER);
+            date_time = timestamp(mux, rtc, PAGE_POTENTIOMETER_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
 
             //  Read the potentiomenter
             potentiometer_reading = analogRead(ANALOG_POT_PIN);
@@ -2144,8 +2117,8 @@ void loop (void) {
             html.replace("DATESTAMP_MARKER", date_time);
             break;
           case PAGE_LIGHT_ID:
-            html = Web_Pages[PAGE_LIGHT_ID]; //String(HTML_CONTENT_LIGHT);
-            date_time = timestamp(&mux, PAGE_LIGHT_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
+            html = web_pages[PAGE_LIGHT_ID].html; //String(HTML_CONTENT_LIGHT);
+            date_time = timestamp(mux, rtc, PAGE_LIGHT_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
 
             if (USING_VEML7700 and sensor_status.veml7700) {
               lux = get_veml7700(&veml);
@@ -2156,7 +2129,7 @@ void loop (void) {
               html.replace("DATESTAMP_MARKER", date_time);
             } else {
               //  Empty page
-              set_empty_page(mux, Web_Pages, sequence_nr);
+              set_empty_page(mux, web_pages, sequence_nr);
             }
             break;
           case PAGE_IMU_BNO055_ID:
@@ -2164,11 +2137,11 @@ void loop (void) {
               The BNO055 is the main IMU for this project
             */
             if (USING_BNO055 and sensor_status.bno055) {
-              html = Web_Pages[PAGE_IMU_BNO055_ID];
-              date_time = timestamp(&mux, PAGE_IMU_BNO055_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
+              html = web_pages[PAGE_IMU_BNO055_ID].html;
+              date_time = timestamp(mux, rtc, PAGE_IMU_BNO055_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
 
               //  Read all the data from the IMU
-              sensors = get_bno055(&mux, sensors);
+              sensors = get_bno055(mux, sensors);
 
               //  Accelerometer
               triple.x = sensors.bno055.accelerometer.x;
@@ -2246,8 +2219,8 @@ void loop (void) {
             break;
           case PAGE_IMU_LSM6DSOX_ID:
             if ((USING_LSM6DSOX_9DOF and sensor_status.lsm6dsox_9dof) or (USING_LSM6DSOX_6DOF and sensor_status.lsm6dsox_6dof)) {
-              html = Web_Pages[PAGE_IMU_LSM6DSOX_ID].html;
-              date_time = timestamp(mux, Web_Pages[PAGE_IMU_LSM6DSOX_ID].name, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
+              html = web_pages[PAGE_IMU_LSM6DSOX_ID].html;
+              date_time = timestamp(mux, rtc, web_pages[PAGE_IMU_LSM6DSOX_ID].name, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
               sensors = get_lsm6dsox(mux, sensors, &lis3);
 
               //  Replace the markers by real values
@@ -2270,23 +2243,23 @@ void loop (void) {
               html.replace("IMU_MAGNETOMETER_MARKER", temp_html);
             } else { 
               //  Empty page - no data available
-              html = set_empty_page(mux, Web_Page[PAGE_NO_DATA].name, sequence_nr);
+              html = set_empty_page(mux, web_pages, sequence_nr);
             }
 
             html.replace("DATESTAMP_MARKER", date_time);
             html.replace("SEQUENCE_COUNT_MARKER", String(sequence_nr));
             break;
           case PAGE_ERROR_404_ID:
-            html = String(HTML_CONTENT_404_ID);
-            date_time = timestamp(mux, PAGE_ERROR_404_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
+            html = web_pages[PAGE_ERROR_404_ID].html;
+            date_time = timestamp(mux, rtc, PAGE_ERROR_404_NAME, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
 
             //  Replace the markers by real values
             html.replace("SEQUENCE_COUNTER_MARKER", String(sequence_nr));
             html.replace("DATESTAMP_MARKER", date_time);
             break;
           case PAGE_ERROR_405_ID:
-            html = String(Web_Pages[HTML_CONTENT_405_ID].html);
-            date_time = timestamp(&mux, Web_Pages[HTML_CONTENT_405_ID].name, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
+            html = web_pages[PAGE_ERROR_405_ID].html;
+            date_time = timestamp(mux, rtc, web_pages[PAGE_ERROR_405_ID].name, SHOW_FULL_DATE, SHOW_12_HOURS, SHOW_LONG_DATE, SHOW_SECONDS);
 
             //  Replace the markers by real values
             html.replace("DATESTAMP_MARKER", date_time);
@@ -2308,7 +2281,7 @@ void loop (void) {
         //  Invalid Request
         //  405 Method Not Allowed
         Serial.println("405 Method Not Allowed");
-        html = String(Web_Pages[HTML_CONTENT_405_ID].html);
+        html = web_pages[PAGE_ERROR_405_ID].html;
         page_id = PAGE_ERROR_405_ID;
       }
 

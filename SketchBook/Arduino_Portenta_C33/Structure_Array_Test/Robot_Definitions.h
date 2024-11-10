@@ -331,7 +331,7 @@ struct ColorRGB {
 
 #define LAST_INFO_PAGE_ID             PAGE_ERROR_405_ID
 
-#define MAX_NUM_WEB_PAGES            LAST_INFO_PAGE_ID + 1
+#define MAX_NUM_WEB_PAGES             LAST_INFO_PAGE_ID + 1
 
 #define PUT_BASE                      128
 
@@ -343,5 +343,4 @@ struct Web_Page_Info {
   String name;
   String title;
 };
-
 #endif
