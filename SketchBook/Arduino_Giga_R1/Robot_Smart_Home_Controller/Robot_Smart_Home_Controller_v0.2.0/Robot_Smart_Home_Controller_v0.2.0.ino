@@ -7,16 +7,17 @@
  *******************************************************************************************
  *  Heavily modifed and extended by Dale Weber <dalew@hybridrobotix.io>
  *
- *  14-Oct-2024: Code has been completely reorganized into sections and function names
- *    have been changed to better reflect their purpose.
+ *  14-Oct-2023 v0.1.0: Initial version - Starting over.
  *
  *  This is the control sketch for the Robot Smart Home Controller
- *  Copyright (c) by Dale Weber <hybotics@hybotics.dev> 2024
+ *  Copyright (c) by Dale Weber <hybotics@hybridrobotix.io> 2024
  ******************************************************************************************/
 
 #include  "Robot_Smart_Home_Controller.h"
 #include  "Web_Server_Control.h"
 #include  "Secrets.h"
+
+#include  "Function_Prototypes.h"
 
 /*******************************************************************
     DISPLAY: Begin Data Display and Debug Routines
@@ -128,11 +129,6 @@ void bno55_print_event (sensors_event_t* event) {
   Serial.println(z);
 }
 
-
-/*
-    FORMATTING:
-*/
-
 /*    
   Print out the connection status:
 */
@@ -146,6 +142,10 @@ void print_wifi_status(void) {
   Serial.print(WiFi.RSSI());
   Serial.println(" dBm");
 }
+
+/*******************************************************************
+    DISPLAY: End Data Display and Debug Routines
+*******************************************************************/
 
 /*******************************************************************
     FORMATTING: Begin Data Formatting routines
@@ -190,33 +190,6 @@ String format_imu_xyz_html (Three_Axis readings) {
     UTILITY: Begin Utility routines
 ********************************************************************/
 
-/*
-  Blink the onboard RGB LED with the selected color
-
-  Parameters:
-    color:          a ColorRGB structure that defines the desired color
-    blink_rate_ms:  The blink rate in ms
-    nr_cycles:      The number of times to blink the LED
-
-  Returns:          void
-*/
-void blink_rgb (ColorRGB color, uint8_t blink_rate_ms=DEFAULT_BLINK_RATE_MS, uint8_t nr_cycles=DEFAULT_NR_CYCLES) {
-  uint8_t count;
-
-  for (count=0; count<nr_cycles; count++) {
-    digitalWrite(LEDR, color.redB);
-    digitalWrite(LEDG, color.greenB);
-    digitalWrite(LEDB, color.blueB);
-
-    delay(blink_rate_ms);
-
-    digitalWrite(LEDR, HIGH);
-    digitalWrite(LEDG, HIGH);
-    digitalWrite(LEDB, HIGH);
-
-    delay(blink_rate_ms);
-  }
-}
 
 /*
   Blink a standard LED on the selected pin.
@@ -1912,6 +1885,7 @@ void loop (void) {
 
   while (connected) {
     //  Heartbeat
+    //blink_rgb(Blue, DEFAULT_BLINK_RATE_MS, DEFAULT_NR_CYCLES);
     blink_rgb(Blue);
 
     //Serial.println();
@@ -1930,6 +1904,7 @@ void loop (void) {
       HTTP_req = "";
 
       blink_rgb(Magenta);
+      //blink_rgb(Magenta, DEFAULT_BLINK_RATE_MS, DEFAULT_NR_CYCLES);
 
       sequence_nr++;
       start_millis = millis();

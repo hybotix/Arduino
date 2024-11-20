@@ -7,8 +7,7 @@
  *******************************************************************************************
  *  Heavily modifed and extended by Dale Weber <dalew@hybridrobotix.io>
  *
- *  14-Oct-2024: Code has been completely reorganized into sections and function names
- *    have been changed to better reflect their purpose.
+ *  14-Oct-2023 v0.1.0: Initial version - Starting over.
  *
  *  This is the control sketch for the Robot Smart Home Controller
  *  Copyright (c) by Dale Weber <hybotics@hybotics.dev> 2024
