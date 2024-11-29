@@ -59,10 +59,13 @@ Adafruit_SHT4x sht45 = Adafruit_SHT4x();
 
 #include "Adafruit_VEML7700.h"
 Adafruit_VEML7700 veml = Adafruit_VEML7700();
+ 
+#include "ScioSense_ENS160.h"  // ENS160 library
+ScioSense_ENS160      ens160(ENS160_I2CADDR_0);
 
-#include <ScioSense_ENS160.h>  // ENS160 library
+//#include <ScioSense_ENS160.h>  // ENS160 library
 //  ScioSense_ENS160  ens160(ENS160_I2CADDR_0);
-ScioSense_ENS160  ens160(ENS160_I2CADDR_1);
+//ScioSense_ENS160  ens160(ENS160_I2CADDR_1);
 
 #include <SensirionI2CScd4x.h>
 SensirionI2CScd4x scd40;
@@ -72,4 +75,5 @@ SensirionI2CScd4x scd40;
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
 Adafruit_BNO055 bno055 = Adafruit_BNO055(55, 0x28);
+
 #endif

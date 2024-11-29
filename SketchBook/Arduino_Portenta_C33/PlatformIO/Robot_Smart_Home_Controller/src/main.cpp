@@ -1,4 +1,4 @@
-/******************************************************************************************
+ /******************************************************************************************
  * Code from the original sketch was created by ArduinoGetStarted.com
  *
  * This example code is in the public domain
@@ -400,6 +400,17 @@ String left_pad (String str, uint8_t pad_length=DEFAULT_PAD_LENGTH, bool numeric
 }
 
 /*
+    Set the port on the Sparkfun TCA I2C Multiplexor
+*/
+void set_mux_port (QWIICMUX mx, uint8_t port, String device_name) {
+  if (port == DEVICE_NOT_PRESENT) {
+    halt(device_name + " mux port is not valid!");
+  } else {
+    mx.setPort(port);
+  }
+}
+
+/*
   Create a date and time stamp of the current time
 
   Parameters:
@@ -639,17 +650,6 @@ bool set_leds_raspi (uint8_t nr_of_switches=NUMBER_OF_SWITCHES, uint8_t nr_of_le
     result = false;
   }
 */
-}
-
-/*
-    Set the port on the Sparkfun TCA I2C Multiplexor
-*/
-void set_mux_port (QWIICMUX mx, uint8_t port, String device_name) {
-  if (port == DEVICE_NOT_PRESENT) {
-    halt(device_name + " mux port is not valid!");
-  } else {
-    mx.setPort(port);
-  }
 }
 
 /*
