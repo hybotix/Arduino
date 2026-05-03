@@ -3,24 +3,22 @@
  * Hybrid RobotiX — Arduino Nano ESP32
  * Dale Weber <hybotix@hybridrobotix.io>
  *
- * Read an 8x8 array of distances from the VL53L5CX using hybx_vl53l5cx_arduino.
- * Converted from SparkFun example by Nathan Seidle.
- *
+ * Read an 8x8 array of distances from the VL53L5CX using hybx_vl53l5cx_arduino_full.
  * Prints distance_mm as an 8x8 grid to Serial at 115200 baud.
  */
 
 #include <Wire.h>
-#include <hybx_vl53l5cx_arduino.h>
+#include <hybx_vl53l5cx_arduino_full.h>
 
-static hybx_vl53l5cx_arduino sensor;
+static hybx_vl53l5cx_arduino_full sensor;
 
 void setup() {
     Serial.begin(115200);
     delay(1000);
-    Serial.println("hybx_vl53l5cx_arduino — VL53L5CX Example");
+    Serial.println("hybx_vl53l5cx_arduino_full — VL53L5CX Example");
 
     Wire.begin();
-    Wire.setClock(400000);  // Sensor max I2C: 400kHz
+    Wire.setClock(400000);
 
     Serial.println("Initializing sensor — firmware upload up to 30s. Please wait.");
 
@@ -40,7 +38,7 @@ void loop() {
 
     if (!hybx_sensor_ready) return;
 
-    // Print 8x8 distance grid — Y-axis flipped to match physical orientation
+    // Distance grid
     for (int row = 0; row < 8; row++) {
         for (int col = 7; col >= 0; col--) {
             Serial.print("\t");
@@ -48,6 +46,13 @@ void loop() {
         }
         Serial.println();
     }
+
+    // Motion indicator
+    Serial.print("Motion: ");
+    Serial.print(hybx_motion.global_indicator_1);
+    Serial.print(" / ");
+    Serial.println(hybx_motion.global_indicator_2);
+
     Serial.println();
 
     delay(5);
