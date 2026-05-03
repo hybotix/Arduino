@@ -1,83 +1,54 @@
 /*
-  Read an 8x8 array of distances from the VL53L5CX
-  By: Nathan Seidle
-  SparkFun Electronics
-  Date: October 26, 2021
-  License: MIT. See license file for more information but you can
-  basically do whatever you want with this code.
-
-  This example shows how to read all 64 distance readings at once.
-
-  Feel like supporting our work? Buy a board from SparkFun!
-  https://www.sparkfun.com/products/18642
-
-*/
+ * VL53L5CX_Example.ino
+ * Hybrid RobotiX — Arduino Nano ESP32
+ * Dale Weber <hybotix@hybridrobotix.io>
+ *
+ * Read an 8x8 array of distances from the VL53L5CX using hybx_vl53l5cx_arduino.
+ * Converted from SparkFun example by Nathan Seidle.
+ *
+ * Prints distance_mm as an 8x8 grid to Serial at 115200 baud.
+ */
 
 #include <Wire.h>
+#include <hybx_vl53l5cx_arduino.h>
 
-#include <SparkFun_VL53L5CX_Library.h> //http://librarymanager/All#SparkFun_VL53L5CX
-
-SparkFun_VL53L5CX myImager;
-VL53L5CX_ResultsData measurementData; // Result data class structure, 1356 byes of RAM
-
-int imageResolution = 0; //Used to pretty print output
-int imageWidth = 0; //Used to pretty print output
-
-uint32_t looper = 0;
+static hybx_vl53l5cx_arduino sensor;
 
 void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  Serial.println("SparkFun VL53L5CX Imager Example");
+    Serial.begin(115200);
+    delay(1000);
+    Serial.println("hybx_vl53l5cx_arduino — VL53L5CX Example");
 
-  Wire.begin(); //This resets to 100kHz I2C
-  Wire.setClock(400000); //Sensor has max I2C freq of 400kHz 
-  myImager.setWireMaxPacketSize(128);  // ← Add this
- 
-  if (myImager.begin()) {
-    Serial.println("Found the VL53L5CX sensor!");
-  } else {
-    Serial.println(F("The VL53L5CX was not found - Check your wiring. Freezing"));
-    while (1) ;
-  }
-  
-  Serial.println("Initializing sensor board. This can take up to 10s. Please wait.");
+    Wire.begin();
+    Wire.setClock(400000);  // Sensor max I2C: 400kHz
 
-  myImager.setResolution(8*8); //Enable all 64 pads
-  
-  imageResolution = myImager.getResolution(); //Query sensor for current resolution - either 4x4 or 8x8
-  imageWidth = sqrt(imageResolution); //Calculate printing width
+    Serial.println("Initializing sensor — firmware upload up to 30s. Please wait.");
 
-  myImager.startRanging();
+    if (!sensor.begin()) {
+        Serial.print("ERROR: init failed — step ");
+        Serial.print(hybx_last_error_step);
+        Serial.print(" code ");
+        Serial.println(hybx_last_error);
+        while (1);
+    }
 
-  Serial.println("Exiting the setup()");
+    Serial.println("Sensor ready. Resolution: 8x8");
 }
 
 void loop() {
-  looper += 1;
+    sensor.poll();
 
-  //Serial.print("Loop #");
-  //Serial.print(looper);
-  //Serial.println();
+    if (!hybx_sensor_ready) return;
 
-  //Poll sensor for new data
-  if (myImager.isDataReady() == true) {
-    if (myImager.getRangingData(&measurementData)) { //Read distance data into array
-  
-      //The ST library returns the data transposed from zone mapping shown in datasheet
-      //Pretty-print data with increasing y, decreasing x to reflect reality
-      for (int y = 0 ; y <= imageWidth * (imageWidth - 1) ; y += imageWidth) {
-        for (int x = imageWidth - 1 ; x >= 0 ; x--) {
-          Serial.print("\t");
-          Serial.print(measurementData.distance_mm[x + y]);
+    // Print 8x8 distance grid — Y-axis flipped to match physical orientation
+    for (int row = 0; row < 8; row++) {
+        for (int col = 7; col >= 0; col--) {
+            Serial.print("\t");
+            Serial.print(hybx_distance_mm[row][col]);
         }
-
         Serial.println();
-      }
-      
-      Serial.println();
     }
-  }
+    Serial.println();
 
-  delay(5); //Small delay between polling
+    delay(5);
 }
