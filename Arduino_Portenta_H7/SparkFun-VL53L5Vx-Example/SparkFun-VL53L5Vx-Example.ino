@@ -22,7 +22,7 @@ VL53L5CX_ResultsData measurementData; // Result data class structure, 1356 byes 
 
 int imageResolution = 0; //Used to pretty print output
 int imageWidth = 0; //Used to pretty print output
-uint32_t looper = 0;
+uint32_t measurement_counter = 0;
 
 void setup()
 {
@@ -52,10 +52,10 @@ void loop()
 {
   //Poll sensor for new data
   if (myImager.isDataReady() == true) {
-    looper++;
-    Serial.print("Loop #");
-    Serial.print(looper);
-    Serial.println(".");
+    measurement_counter++;
+    Serial.print("Measurement #");
+    Serial.print(measurement_counter);
+    Serial.println(" (8x8 Distance in mm).");
 
     if (myImager.getRangingData(&measurementData)) {//Read distance data into array
   
@@ -74,5 +74,5 @@ void loop()
     }
   }
 
-  delay(100); //Small delay between polling
+  delay(500); //Small delay between polling
 }
